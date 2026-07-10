@@ -32,6 +32,7 @@ def save_decisions(results: list):
             "location":      job.get("location", ""),
             "platform":      job.get("platform", ""),
             "url":           job.get("url", ""),
+            "external_id":   job.get("external_id", ""),
             "match_score":   job.get("match_score", 0),
             "cover_letter":  r.get("cover_letter", ""),
             "status":        "applied" if r["action"] == "approve" else "skipped",
@@ -73,3 +74,24 @@ def get_stats() -> dict:
         "success_rate":   round(len(interview) / len(applied) * 100, 1) if applied else 0,
         "recent":         sorted(applied, key=lambda x: x["date"], reverse=True)[:10],
     }
+
+
+def get_seen_ids(days: int = 30) -> set:
+    """Return external_ids of jobs seen in the last N days."""
+    from datetime import datetime, timedelta
+    history  = _load()
+    cutoff   = datetime.now() - timedelta(days=days)
+    seen     = set()
+    for entry in history:
+        try:
+            entry_date = datetime.strptime(entry["date"], "%Y-%m-%d %H:%M")
+            if entry_date >= cutoff:
+                url = entry.get("url", "")
+                ext = entry.get("external_id", "")
+                if url:
+                    seen.add(url)
+                if ext:
+                    seen.add(ext)
+        except Exception:
+            continue
+    return seen

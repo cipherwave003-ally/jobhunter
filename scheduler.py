@@ -18,6 +18,13 @@ def run_pipeline():
     scored   = batch_score(jobs)
     filtered = filter_by_score(scored, min_score=45)
 
+    # Remove jobs already seen in the last 30 days
+    from core.tracker import get_seen_ids
+    seen_ids = get_seen_ids(days=30)
+    before   = len(filtered)
+    filtered = [j for j in filtered if j.get("external_id") not in seen_ids and j.get("url") not in seen_ids]
+    print(f"  Dedup: {before - len(filtered)} already-seen jobs removed, {len(filtered)} new jobs remaining")
+
     if not filtered:
         print("No matching jobs found today.")
         return
